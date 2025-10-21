@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binance Red Pocket Exchange</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Firebase App -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase Config -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDm3eYj19iVb0CL1h3TYjEMVWXT1Dc4GXw",
+            authDomain: "brpc-app.firebaseapp.com",
+            projectId: "brpc-app",
+            storageBucket: "brpc-app.firebasestorage.app",
+            messagingSenderId: "1035950803781",
+            appId: "1:1035950803781:web:85b2e0f3aec46306fccc2c"
+        };
+        firebase.initializeApp(firebaseConfig);
+    </script>
+</head>
+<body class="light-theme">
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="header-content">
+                <h1>🎁 Red Pocket Exchange</h1>
+                <div class="header-actions">
+                    <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+                    <div class="user-section">
+                        <span class="points" id="pointsDisplay">Points: 0</span>
+                        <button class="btn-watch-ad" onclick="watchAd()">📺 Watch Ad</button>
+                        <button class="btn-login" onclick="toggleAuthModal()" id="loginBtn">Login</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Admin Panel Button -->
+        <div class="admin-panel-btn">
+            <button class="btn-admin" onclick="toggleAdminPanel()" id="adminBtn" style="display: none;">👑 Admin</button>
+        </div>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Stats Cards -->
+            <div class="stats-container">
+                <div class="stat-card">
+                    <h3>Available Codes</h3>
+                    <span id="availableCodes">0</span>
+                </div>
+                <div class="stat-card">
+                    <h3>Your Points</h3>
+                    <span id="userPoints">0</span>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Claims</h3>
+                    <span id="totalClaims">0</span>
+                </div>
+            </div>
+
+            <!-- Note Card -->
+            <div class="note-card">
+                <p>💡 <strong>Note:</strong> Fully claimed, Unclaimed & Partial claimed codes will automatically disappear after expiry date.</p>
+            </div>
+
+            <!-- Codes List -->
+            <div class="codes-section">
+                <h2>Available Red Pocket Codes</h2>
+                <div id="codesList" class="codes-list">
+                    <!-- Codes will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Publish Button -->
+            <div class="publish-section">
+                <button class="btn-publish" onclick="showPublishForm()">📤 Publish New Code (5 Points)</button>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Join Our Community</h3>
+                    <p>Connect with other users and share codes</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Admin Access</h3>
+                    <p>Contact support for admin privileges</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="toggleAuthModal()">&times;</span>
+            <h2>Login / Signup</h2>
+            <form id="authForm" onsubmit="handleAuth(event)">
+                <input type="email" id="authEmail" placeholder="Email" required>
+                <input type="password" id="authPassword" placeholder="Password" required>
+                <button type="submit" id="authSubmit">Login</button>
+                <button type="button" onclick="switchAuthMode()" id="authSwitch">Switch to Signup</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Publish Modal -->
+    <div id="publishModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closePublishModal()">&times;</span>
+            <h2>Publish Red Pocket Code</h2>
+            <form id="publishForm" onsubmit="publishCode(event)">
+                <input type="text" id="codeInput" placeholder="Red Pocket Code (e.g., HDRFS9CH)" required>
+                <select id="coinSelect" required>
+                    <option value="">Select Coin</option>
+                    <option value="PEPE">PEPE</option>
+                    <option value="TRX">TRX</option>
+                    <option value="USDC">USDC</option>
+                    <option value="BONK">BONK</option>
+                    <option value="BTC">BTC</option>
+                    <option value="ETH">ETH</option>
+                </select>
+                <input type="number" id="maxClaims" placeholder="Max Claims (e.g., 5, 10, 20)" min="1" required>
+                <input type="date" id="expiryDate" required>
+                <div class="form-actions">
+                    <button type="submit">Publish Code</button>
+                    <button type="button" onclick="closePublishModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div id="adminModal" class="modal">
+        <div class="modal-content admin-panel">
+            <span class="close" onclick="toggleAdminPanel()">&times;</span>
+            <h2>👑 Admin Panel</h2>
+            
+            <div class="admin-tabs">
+                <button class="tab-btn active" onclick="openAdminTab('codes')">Manage Codes</button>
+                <button class="tab-btn" onclick="openAdminTab('updates')">Post Updates</button>
+                <button class="tab-btn" onclick="openAdminTab('users')">User Management</button>
+            </div>
+
+            <div id="adminCodes" class="tab-content active">
+                <h3>Add New Code</h3>
+                <form onsubmit="adminAddCode(event)">
+                    <input type="text" id="adminCode" placeholder="Red Pocket Code" required>
+                    <select id="adminCoin" required>
+                        <option value="PEPE">PEPE</option>
+                        <option value="TRX">TRX</option>
+                        <option value="USDC">USDC</option>
+                    </select>
+                    <input type="number" id="adminMaxClaims" placeholder="Max Claims" required>
+                    <input type="date" id="adminExpiry" required>
+                    <button type="submit">Add Code</button>
+                </form>
+
+                <h3>Existing Codes</h3>
+                <div id="adminCodesList"></div>
+            </div>
+
+            <div id="adminUpdates" class="tab-content">
+                <h3>Post Update</h3>
+                <form onsubmit="postUpdate(event)">
+                    <textarea id="updateText" placeholder="Enter update message..." required></textarea>
+                    <button type="submit">Post Update</button>
+                </form>
+            </div>
+
+            <div id="adminUsers" class="tab-content">
+                <h3>User Management</h3>
+                <div id="usersList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content success">
+            <h3>✅ Success!</h3>
+            <p id="successMessage"></p>
+            <button onclick="closeSuccessModal()">OK</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
